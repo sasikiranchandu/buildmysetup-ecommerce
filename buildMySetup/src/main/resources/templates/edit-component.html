@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Edit Component — BuildMySetup Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep:   #060612;
+            --bg-card:   #0d0d1f;
+            --bg-panel:  #090915;
+            --bg-glass:  rgba(255,255,255,0.04);
+            --border:    rgba(255,255,255,0.08);
+            --cyan:      #00f2fe;
+            --purple:    #a855f7;
+            --orange:    #f97316;
+            --green:     #22c55e;
+            --red:       #ef4444;
+            --yellow:    #f59e0b;
+            --text:      #e2e8f0;
+            --muted:     #64748b;
+            --font-head: 'Orbitron', monospace;
+            --font-body: 'Syne', sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-deep); color: var(--text);
+            font-family: var(--font-body); min-height: 100vh; overflow-x: hidden;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+        .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .ambient::before {
+            content: ''; position: absolute; top: -150px; left: -150px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(245,158,11,0.05), transparent 65%);
+        }
+        .ambient::after {
+            content: ''; position: absolute; bottom: -100px; right: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(168,85,247,0.05), transparent 65%);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+            padding: 0.85rem 2rem;
+            background: rgba(6,6,18,0.9); backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .navbar-brand {
+            font-family: var(--font-head); font-weight: 900; font-size: 1.1rem;
+            letter-spacing: 2px; text-decoration: none;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-links { display: flex; align-items: center; gap: 0.6rem; }
+        .admin-badge {
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+            padding: 3px 10px; border-radius: 20px;
+            background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); color: var(--purple);
+        }
+        .btn-nav {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.35rem 0.9rem; border-radius: 20px;
+            font-size: 0.82rem; font-family: var(--font-body); font-weight: 600;
+            text-decoration: none; border: 1px solid var(--border);
+            color: var(--text); background: var(--bg-glass); cursor: pointer; transition: all 0.25s;
+        }
+        .btn-nav:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,242,254,0.07); }
+        .btn-nav-logout { color: #f87171; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.07); }
+        .btn-nav-logout:hover { color: #fff; border-color: #f87171; background: rgba(239,68,68,0.18); }
+        .nav-user {
+            font-size: 0.82rem; padding: 0.35rem 0.85rem; border-radius: 20px;
+            background: var(--bg-glass); border: 1px solid var(--border); color: var(--text);
+        }
+
+        .page-wrap { position: relative; z-index: 1; padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* PAGE HEADER */
+        .page-header {
+            padding: 2.5rem 0 1.75rem; border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(245,158,11,0.02), transparent);
+        }
+        .breadcrumb-row { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem; }
+        .breadcrumb-row a { color: var(--cyan); text-decoration: none; }
+        .page-title { font-family: var(--font-head); font-size: clamp(1.4rem, 2.5vw, 1.9rem); font-weight: 900; letter-spacing: -0.5px; }
+        .page-title span { background: linear-gradient(90deg, var(--yellow), var(--orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .edit-id-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 20px; padding: 4px 12px; font-size: 0.78rem;
+            color: var(--yellow); margin-top: 8px;
+        }
+
+        /* FORM LAYOUT */
+        .form-layout {
+            display: grid; grid-template-columns: 1fr 340px;
+            gap: 2rem; align-items: start; padding: 2.5rem 0 4rem;
+        }
+
+        /* FORM CARD */
+        .form-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-bottom: 1.5rem; }
+        .form-card-header {
+            padding: 1.25rem 1.75rem; border-bottom: 1px solid var(--border);
+            background: rgba(245,158,11,0.02);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .form-card-header h3 {
+            font-family: var(--font-head); font-size: 0.82rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .form-card-body { padding: 1.75rem; }
+
+        /* FIELDS */
+        .field { margin-bottom: 1.5rem; }
+        .field-label {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; font-weight: 700; color: var(--text);
+            margin-bottom: 0.5rem; letter-spacing: 0.5px;
+        }
+        .field-label i { color: var(--yellow); font-size: 0.9rem; }
+        .field-label .required { color: var(--red); }
+        .field-hint { font-size: 0.72rem; color: var(--muted); margin-top: 5px; }
+
+        .form-ctrl {
+            width: 100%; background: var(--bg-glass); border: 1px solid var(--border);
+            border-radius: 10px; padding: 0.65rem 1rem;
+            color: var(--text); font-family: var(--font-body); font-size: 0.9rem;
+            outline: none; transition: all 0.25s;
+        }
+        .form-ctrl::placeholder { color: var(--muted); }
+        .form-ctrl:focus {
+            border-color: var(--yellow);
+            background: rgba(245,158,11,0.04);
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.08);
+        }
+        select.form-ctrl { cursor: pointer; }
+        select.form-ctrl option { background: #0d0d1f; color: var(--text); }
+        textarea.form-ctrl { resize: vertical; min-height: 90px; }
+
+        /* CATEGORY PICKER */
+        .cat-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .cat-option { display: none; }
+        .cat-option + label {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 1rem 0.5rem; border-radius: 12px; cursor: pointer;
+            border: 1px solid var(--border); background: var(--bg-glass);
+            font-size: 0.78rem; font-weight: 600; color: var(--muted);
+            transition: all 0.25s; text-align: center;
+        }
+        .cat-option + label .cat-icon { font-size: 1.5rem; }
+        .cat-option:checked + label { border-color: var(--yellow); background: rgba(245,158,11,0.08); color: var(--yellow); }
+        .cat-option + label:hover { border-color: rgba(245,158,11,0.4); color: var(--text); }
+
+        /* IMAGE SECTION */
+        .current-img-wrap {
+            background: #0a0a1a; border: 1px solid var(--border); border-radius: 12px;
+            padding: 1rem; display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem;
+        }
+        .current-img {
+            width: 80px; height: 80px; border-radius: 10px;
+            object-fit: contain; background: var(--bg-glass); border: 1px solid var(--border); padding: 4px; flex-shrink: 0;
+        }
+        .current-img-info h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        .current-img-info p { font-size: 0.75rem; color: var(--muted); }
+        .current-img-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+            background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: var(--green);
+            margin-top: 4px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border); border-radius: 14px;
+            padding: 1.75rem; text-align: center; cursor: pointer;
+            transition: all 0.3s; position: relative; background: var(--bg-glass);
+        }
+        .upload-area:hover, .upload-area.drag-over { border-color: var(--yellow); background: rgba(245,158,11,0.03); }
+        .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .upload-icon { font-size: 1.75rem; color: var(--muted); margin-bottom: 0.6rem; transition: color 0.25s; }
+        .upload-area:hover .upload-icon { color: var(--yellow); }
+        .upload-text { font-size: 0.82rem; color: var(--muted); }
+        .upload-text strong { color: var(--yellow); }
+        .upload-hint { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+        .upload-preview {
+            width: 100%; max-height: 180px; object-fit: contain;
+            border-radius: 10px; margin-top: 1rem; display: none;
+            border: 1px solid var(--border); padding: 4px; background: #0a0a1a;
+        }
+
+        /* PREVIEW PANEL */
+        .preview-panel {
+            background: var(--bg-card); border: 1px solid rgba(245,158,11,0.15);
+            border-radius: 20px; overflow: hidden; position: sticky; top: 96px;
+        }
+        .preview-header {
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+            background: rgba(245,158,11,0.02);
+        }
+        .preview-header h3 {
+            font-family: var(--font-head); font-size: 0.82rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .preview-body { padding: 1.5rem; }
+        .preview-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .preview-img-area {
+            aspect-ratio: 1/1; background: #0a0a1a;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .preview-img-area img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+        .preview-card-body { padding: 1rem; }
+        .preview-cat { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
+        .preview-name { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .preview-price { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--cyan); }
+        .changes-log {
+            margin-top: 1.25rem; background: rgba(245,158,11,0.04);
+            border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; padding: 1rem;
+        }
+        .changes-log h5 { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--yellow); margin-bottom: 0.75rem; }
+        .change-row { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px; }
+        .change-row .key { color: var(--muted); }
+        .change-row .val { color: var(--text); font-weight: 600; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+
+        /* ACTIONS */
+        .form-actions { display: flex; gap: 0.75rem; }
+        .btn-update {
+            flex: 1; padding: 0.75rem; border-radius: 12px;
+            font-family: var(--font-body); font-size: 0.9rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--yellow), var(--orange));
+            color: #000; border: none; cursor: pointer;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.2); transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-update:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(245,158,11,0.35); }
+        .btn-update:active { transform: scale(0.98); }
+        .btn-cancel {
+            padding: 0.75rem 1.25rem; border-radius: 12px;
+            font-family: var(--font-body); font-size: 0.85rem; font-weight: 600;
+            background: var(--bg-glass); border: 1px solid var(--border);
+            color: var(--text); cursor: pointer; transition: all 0.25s; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-cancel:hover { border-color: var(--red); color: #f87171; }
+
+        footer {
+            position: relative; z-index: 1; padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border); background: rgba(6,6,18,0.8);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+        }
+        .footer-brand {
+            font-family: var(--font-head); font-size: 0.9rem; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .footer-copy { font-size: 0.75rem; color: var(--muted); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        @media (max-width: 900px) {
+            .form-layout { grid-template-columns: 1fr; }
+            .preview-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <a class="navbar-brand" href="/">⚡ BuildMySetup</a>
+    <div class="nav-links">
+        <span class="admin-badge"><i class="bi bi-shield-fill me-1"></i>Admin</span>
+        <span class="nav-user"><i class="bi bi-person-circle me-1"></i><span sec:authentication="name">Admin</span></span>
+        <a href="/admin/list" class="btn-nav"><i class="bi bi-arrow-left"></i> Back to List</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <button type="submit" class="btn-nav btn-nav-logout"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="container">
+            <div class="breadcrumb-row">
+                <a href="/"><i class="bi bi-house"></i> Home</a>
+                <i class="bi bi-chevron-right" style="font-size:.6rem;"></i>
+                <a href="/admin/list">Admin</a>
+                <i class="bi bi-chevron-right" style="font-size:.6rem;"></i>
+                <span>Edit Component</span>
+            </div>
+            <h1 class="page-title">Edit <span>Component</span></h1>
+            <div class="edit-id-badge">
+                <i class="bi bi-pencil-fill"></i>
+                Editing: <strong th:text="${component.name}">Component</strong>
+                &nbsp;·&nbsp; ID: <strong th:text="${component.id}">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div style="flex:1;position:relative;z-index:1;">
+        <div class="container">
+            <div class="form-layout">
+
+                <!-- FORM -->
+                <div>
+                    <form th:action="@{/admin/update}" method="post" enctype="multipart/form-data" id="editForm" th:object="${component}">
+                        <!-- Hidden ID -->
+                        <input type="hidden" th:field="*{id}"/>
+
+                        <!-- Basic Info -->
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="bi bi-info-circle" style="color:var(--yellow);"></i>
+                                <h3>Basic Information</h3>
+                            </div>
+                            <div class="form-card-body">
+
+                                <div class="field">
+                                    <div class="field-label"><i class="bi bi-type"></i> Component Name <span class="required">*</span></div>
+                                    <input type="text" class="form-ctrl" th:field="*{name}"
+                                           placeholder="Component name" required oninput="updatePreview()"/>
+                                </div>
+
+                                <div class="field">
+                                    <div class="field-label"><i class="bi bi-currency-rupee"></i> Price (₹) <span class="required">*</span></div>
+                                    <input type="number" class="form-ctrl" th:field="*{price}"
+                                           placeholder="Price in ₹" min="0" step="1" required oninput="updatePreview()"/>
+                                </div>
+
+                                <div class="field">
+                                    <div class="field-label"><i class="bi bi-card-text"></i> Description</div>
+                                    <textarea class="form-ctrl" th:field="*{description}"
+                                              placeholder="Component description..."></textarea>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="bi bi-tag" style="color:var(--yellow);"></i>
+                                <h3>Category</h3>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="field-label mb-2"><i class="bi bi-grid-3x3-gap"></i> Setup Type <span class="required">*</span></div>
+                                <div class="cat-picker">
+                                    <div>
+                                        <input type="radio" class="cat-option" name="category" id="cat-dev" value="Developer" th:field="*{category}" required/>
+                                        <label for="cat-dev"><span class="cat-icon">👨‍💻</span>Developer</label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" class="cat-option" name="category" id="cat-game" value="Gaming" th:field="*{category}"/>
+                                        <label for="cat-game"><span class="cat-icon">🎮</span>Gaming</label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" class="cat-option" name="category" id="cat-creator" value="Creator" th:field="*{category}"/>
+                                        <label for="cat-creator"><span class="cat-icon">🎥</span>Creator</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image -->
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="bi bi-image" style="color:var(--yellow);"></i>
+                                <h3>Product Image</h3>
+                            </div>
+                            <div class="form-card-body">
+
+                                <!-- Current image preview -->
+                                <div class="current-img-wrap">
+                                    <img th:src="@{'/component/image/' + ${component.id}}"
+                                         class="current-img" th:alt="${component.name}"
+                                         onerror="this.src='https://placehold.co/80x80/0d0d1f/f59e0b?text=IMG'"
+                                         id="currentImg"/>
+                                    <div class="current-img-info">
+                                        <h4>Current Image</h4>
+                                        <p>Leave blank to keep existing image</p>
+                                        <span class="current-img-badge"><i class="bi bi-check-circle-fill me-1"></i>Saved in DB</span>
+                                    </div>
+                                </div>
+
+                                <div class="upload-area" id="uploadArea"
+                                     ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
+                                    <input type="file" name="imageFile" id="imageFile" accept="image/*" onchange="previewImage(this)"/>
+                                    <div class="upload-icon"><i class="bi bi-arrow-repeat"></i></div>
+                                    <div class="upload-text"><strong>Upload new image</strong> to replace current</div>
+                                    <div class="upload-hint">PNG, JPG, WEBP — Max 5MB · Leave empty to keep current</div>
+                                </div>
+                                <img id="imgPreviewInForm" class="upload-preview" alt="New Preview"/>
+
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="form-actions">
+                            <a href="/admin/list" class="btn-cancel"><i class="bi bi-x-circle"></i> Cancel</a>
+                            <button type="submit" class="btn-update">
+                                <i class="bi bi-check-circle-fill"></i> Save Changes
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- PREVIEW PANEL -->
+                <div>
+                    <div class="preview-panel">
+                        <div class="preview-header">
+                            <h3><i class="bi bi-eye me-2" style="color:var(--yellow);"></i>Live Preview</h3>
+                        </div>
+                        <div class="preview-body">
+                            <div class="preview-card">
+                                <div class="preview-img-area" id="previewImgArea">
+                                    <img th:src="@{'/component/image/' + ${component.id}}"
+                                         style="width:100%;height:100%;object-fit:contain;padding:8px;"
+                                         th:alt="${component.name}"
+                                         onerror="this.parentElement.innerHTML='<div style=\'text-align:center;color:var(--muted)\'><i class=\'bi bi-image\' style=\'font-size:2rem;opacity:.3;display:block;margin-bottom:6px\'></i><span style=\'font-size:.75rem\'>No image</span></div>'"
+                                         id="previewImg"/>
+                                </div>
+                                <div class="preview-card-body">
+                                    <div class="preview-cat" id="previewCat"
+                                         th:text="${#strings.toUpperCase(component.category)}">CATEGORY</div>
+                                    <div class="preview-name" id="previewName" th:text="${component.name}">Name</div>
+                                    <div class="preview-price" id="previewPrice"
+                                         th:text="'₹' + ${component.price}">₹0</div>
+                                    <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--green);margin-top:6px;">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);"></span>
+                                        In Stock
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Changes tracker -->
+                            <div class="changes-log">
+                                <h5><i class="bi bi-clock-history me-1"></i>Editing</h5>
+                                <div class="change-row">
+                                    <span class="key">Component ID</span>
+                                    <span class="val" th:text="'#' + ${component.id}">-</span>
+                                </div>
+                                <div class="change-row">
+                                    <span class="key">Original Name</span>
+                                    <span class="val" th:text="${component.name}">-</span>
+                                </div>
+                                <div class="change-row">
+                                    <span class="key">Original Price</span>
+                                    <span class="val" th:text="'₹' + ${component.price}">-</span>
+                                </div>
+                                <div class="change-row">
+                                    <span class="key">Category</span>
+                                    <span class="val" th:text="${component.category}">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <span class="footer-brand">⚡ BuildMySetup</span>
+        <span class="footer-copy">© 2026 BuildMySetup Admin Panel</span>
+    </footer>
+</div>
+
+<script>
+    function updatePreview() {
+        const name  = document.querySelector('[name="name"]')?.value || '';
+        const price = document.querySelector('[name="price"]')?.value || '0';
+        const cat   = document.querySelector('[name="category"]:checked')?.value || '';
+
+        document.getElementById('previewName').textContent  = name || 'Name';
+        document.getElementById('previewPrice').textContent = '₹' + (parseInt(price) || 0).toLocaleString('en-IN');
+        if (cat) document.getElementById('previewCat').textContent = cat.toUpperCase();
+    }
+
+    document.querySelectorAll('.cat-option').forEach(r => r.addEventListener('change', updatePreview));
+
+    function previewImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const area = document.getElementById('previewImgArea');
+            area.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;padding:8px;" alt="new"/>`;
+
+            const inFormPrev = document.getElementById('imgPreviewInForm');
+            inFormPrev.src = e.target.result;
+            inFormPrev.style.display = 'block';
+
+            document.getElementById('uploadArea').style.borderColor = 'var(--yellow)';
+            document.getElementById('uploadArea').style.background  = 'rgba(245,158,11,0.04)';
+
+            // Update current img thumbnail too
+            const cur = document.getElementById('currentImg');
+            if (cur) { cur.src = e.target.result; }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function handleDrag(e, over) {
+        e.preventDefault();
+        document.getElementById('uploadArea').classList.toggle('drag-over', over);
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        handleDrag(e, false);
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            document.getElementById('imageFile').files = e.dataTransfer.files;
+            previewImage(document.getElementById('imageFile'));
+        }
+    }
+
+    window.addEventListener('scroll', () => {
+        document.querySelector('.navbar').style.background =
+            window.scrollY > 30 ? 'rgba(6,6,18,0.97)' : 'rgba(6,6,18,0.9)';
+    });
+</script>
+</body>
+</html>

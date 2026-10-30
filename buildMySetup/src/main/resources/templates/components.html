@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title>Components — BuildMySetup</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep:    #060612;
+            --bg-card:    #0d0d1f;
+            --bg-panel:   #0a0a1a;
+            --bg-glass:   rgba(255,255,255,0.04);
+            --border:     rgba(255,255,255,0.08);
+            --border-hover: rgba(0,242,254,0.3);
+            --cyan:       #00f2fe;
+            --purple:     #a855f7;
+            --pink:       #ec4899;
+            --orange:     #f97316;
+            --green:      #22c55e;
+            --text:       #e2e8f0;
+            --muted:      #64748b;
+            --font-head:  'Orbitron', monospace;
+            --font-body:  'Syne', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ─── NOISE OVERLAY ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── BG ACCENT ─── */
+        .bg-accent {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-accent::before {
+            content: '';
+            position: absolute;
+            top: -300px; left: -200px;
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(0,242,254,0.05), transparent 70%);
+        }
+        .bg-accent::after {
+            content: '';
+            position: absolute;
+            bottom: -200px; right: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(168,85,247,0.05), transparent 70%);
+        }
+
+        /* ─── NAVBAR ─── */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 999;
+            padding: 0.9rem 2rem;
+            background: rgba(6,6,18,0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .navbar-brand {
+            font-family: var(--font-head);
+            font-weight: 900;
+            font-size: 1.15rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links { display: flex; align-items: center; gap: 0.6rem; }
+        .nav-user {
+            color: var(--text);
+            font-size: 0.82rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+        }
+        .btn-nav {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-family: var(--font-body);
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            background: var(--bg-glass);
+            backdrop-filter: blur(10px);
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .btn-nav:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,242,254,0.07); }
+        .btn-nav.active { border-color: var(--cyan); color: var(--cyan); }
+        .btn-nav-logout { color: #f87171; border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
+        .btn-nav-logout:hover { color: #fff; border-color: #f87171; background: rgba(239,68,68,0.2); }
+        .btn-glow {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.38rem 1.1rem;
+            border-radius: 20px; font-size: 0.82rem;
+            font-family: var(--font-body); font-weight: 700;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #000; border: none; cursor: pointer;
+            box-shadow: 0 0 16px rgba(0,242,254,0.25);
+            transition: all 0.25s;
+        }
+        .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(0,242,254,0.45); color: #000; }
+
+        /* ─── PAGE LAYOUT ─── */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            padding-top: 80px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── PAGE HEADER ─── */
+        .page-header {
+            padding: 2.5rem 0 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(0,242,254,0.02), transparent);
+        }
+        .page-header h1 {
+            font-family: var(--font-head);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .page-header h1 span {
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .breadcrumb-bar {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem;
+        }
+        .breadcrumb-bar a { color: var(--cyan); text-decoration: none; }
+        .breadcrumb-bar a:hover { text-decoration: underline; }
+
+        /* ─── SEARCH BAR ─── */
+        .search-wrap {
+            position: relative;
+            max-width: 520px;
+        }
+        .search-icon {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .search-input {
+            width: 100%;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.65rem 1rem 0.65rem 2.6rem;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.25s;
+            backdrop-filter: blur(10px);
+        }
+        .search-input::placeholder { color: var(--muted); }
+        .search-input:focus {
+            border-color: var(--cyan);
+            background: rgba(0,242,254,0.04);
+            box-shadow: 0 0 0 3px rgba(0,242,254,0.08);
+        }
+        .search-clear {
+            position: absolute;
+            right: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: none;
+            transition: color 0.2s;
+        }
+        .search-clear:hover { color: var(--text); }
+        .search-input:not(:placeholder-shown) ~ .search-clear { display: flex; }
+
+        /* ─── LAYOUT: SIDEBAR + GRID ─── */
+        .content-area {
+            flex: 1;
+            padding: 2rem 0 4rem;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* ─── SIDEBAR FILTERS ─── */
+        .sidebar {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: sticky;
+            top: 96px;
+        }
+        .filter-title {
+            font-family: var(--font-head);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-section { margin-bottom: 1.5rem; }
+        .filter-section-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.45rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            margin-bottom: 4px;
+            text-decoration: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+        }
+        .filter-chip:hover {
+            background: var(--bg-glass);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .filter-chip.active {
+            background: rgba(0,242,254,0.08);
+            border-color: rgba(0,242,254,0.25);
+            color: var(--cyan);
+        }
+        .filter-chip-count {
+            margin-left: auto;
+            font-size: 0.72rem;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1px 7px;
+            color: var(--muted);
+        }
+        .price-range { padding: 0.25rem 0; }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+            accent-color: var(--cyan);
+        }
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+        .sort-select {
+            width: 100%;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 0.75rem;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .sort-select option { background: #0d0d1f; }
+        .sort-select:focus { border-color: var(--cyan); }
+
+        /* ─── RESULTS BAR ─── */
+        .results-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .results-count {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .results-count strong { color: var(--text); }
+        .view-toggle { display: flex; gap: 4px; }
+        .view-btn {
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-glass);
+            color: var(--muted);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .view-btn:hover, .view-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,242,254,0.07); }
+
+        /* ─── ACTIVE FILTERS ─── */
+        .active-filters {
+            display: flex; flex-wrap: wrap; gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .active-filter-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.25rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(0,242,254,0.08);
+            border: 1px solid rgba(0,242,254,0.2);
+            color: var(--cyan);
+        }
+        .active-filter-tag .remove {
+            cursor: pointer; opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .active-filter-tag .remove:hover { opacity: 1; }
+
+        /* ─── PRODUCT GRID ─── */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+        .products-grid.list-view {
+            grid-template-columns: 1fr;
+        }
+
+        /* ─── PRODUCT CARD ─── */
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            animation: cardIn 0.4s ease both;
+        }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: none; }
+        }
+        .product-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0,242,254,0.3);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,242,254,0.08);
+        }
+
+        /* image area */
+        .card-img-wrap {
+            position: relative;
+            background: #0a0a1a;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-img-wrap a { display: block; width: 100%; height: 100%; }
+        .card-img-wrap img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .product-card:hover .card-img-wrap img { transform: scale(1.06); }
+
+        /* badge */
+        .card-badge {
+            position: absolute;
+            top: 10px; left: 10px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+        }
+        .badge-new     { background: rgba(0,242,254,0.15); border: 1px solid rgba(0,242,254,0.3); color: var(--cyan); }
+        .badge-hot     { background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3); color: var(--orange); }
+        .badge-top     { background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: var(--purple); }
+
+        /* wishlist btn */
+        .wishlist-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: rgba(6,6,18,0.7);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.25s;
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            transform: scale(0.85);
+        }
+        .product-card:hover .wishlist-btn { opacity: 1; transform: scale(1); }
+        .wishlist-btn:hover { color: var(--pink); border-color: var(--pink); background: rgba(236,72,153,0.1); }
+
+        /* card body */
+        .card-body-custom {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+        }
+        .card-category {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--cyan);
+        }
+        .card-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.35;
+            text-decoration: none;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-name:hover { color: var(--cyan); }
+
+        /* rating stars */
+        .card-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+        }
+        .stars { color: #f59e0b; letter-spacing: 1px; }
+        .rating-count { color: var(--muted); }
+
+        /* price */
+        .card-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-top: 2px;
+        }
+        .card-price {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+        .card-price-old {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-decoration: line-through;
+        }
+        .card-discount {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--green);
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.2);
+            padding: 1px 6px;
+            border-radius: 20px;
+        }
+
+        /* stock */
+        .card-stock {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+        }
+        .stock-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        .in-stock  .stock-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .low-stock .stock-dot { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+        .in-stock  { color: var(--green); }
+        .low-stock { color: var(--orange); }
+
+        /* add to cart */
+        .cart-form { margin-top: auto; padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .qty-row { display: flex; align-items: center; gap: 0.5rem; }
+        .qty-label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+        .qty-input {
+            flex: 1;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            padding: 0.3rem 0.6rem;
+            text-align: center;
+            outline: none;
+            min-width: 0;
+        }
+        .qty-input:focus { border-color: var(--cyan); }
+        .qty-btn {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 0.85rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .qty-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+        .btn-add-cart {
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 0.55rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: var(--font-body);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #000;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 4px 16px rgba(0,242,254,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-add-cart::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .btn-add-cart:hover::before { opacity: 1; }
+        .btn-add-cart:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,242,254,0.3); }
+        .btn-add-cart:active { transform: scale(0.97); }
+
+        /* ─── LIST VIEW CARD ─── */
+        .products-grid.list-view .product-card {
+            flex-direction: row;
+        }
+        .products-grid.list-view .card-img-wrap {
+            width: 180px;
+            min-width: 180px;
+            aspect-ratio: unset;
+            border-bottom: none;
+            border-right: 1px solid var(--border);
+        }
+        .products-grid.list-view .card-body-custom {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+        }
+        .products-grid.list-view .card-info { flex: 1; min-width: 180px; }
+        .products-grid.list-view .card-actions { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+        .products-grid.list-view .cart-form { flex-direction: row; padding: 0; margin: 0; }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 5rem 1rem;
+        }
+        .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.5; }
+        .empty-state h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .empty-state p { color: var(--muted); font-size: 0.9rem; }
+
+        /* ─── SKELETON LOADING ─── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-glass) 25%, rgba(255,255,255,0.07) 50%, var(--bg-glass) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ─── TOAST ─── */
+        .toast-wrap {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast-msg {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--green);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.85rem;
+            color: var(--text);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: toastIn 0.35s ease;
+            min-width: 220px;
+        }
+        .toast-msg .toast-icon { color: var(--green); font-size: 1rem; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* ─── PAGINATION ─── */
+        .pagination-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 3rem;
+        }
+        .page-btn {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-glass);
+            color: var(--muted);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .page-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+        .page-btn.active { background: linear-gradient(135deg, var(--cyan), var(--purple)); color: #000; border: none; font-weight: 700; }
+
+        /* ─── FOOTER ─── */
+        footer {
+            position: relative; z-index: 1;
+            padding: 1.75rem 2rem;
+            border-top: 1px solid var(--border);
+            background: rgba(6,6,18,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-brand {
+            font-family: var(--font-head);
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .footer-copy { font-size: 0.78rem; color: var(--muted); }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .products-grid.list-view .card-img-wrap { width: 120px; min-width: 120px; }
+        }
+        @media (max-width: 600px) {
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .products-grid.list-view .product-card { flex-direction: column; }
+            .products-grid.list-view .card-img-wrap { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="bg-accent"></div>
+
+<!-- ═══════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════ -->
+<nav class="navbar">
+    <a class="navbar-brand" href="/">⚡ BuildMySetup</a>
+
+    <div class="nav-links">
+
+        <!-- ✅ AUTHENTICATED USER -->
+        <div sec:authorize="isAuthenticated()" style="display:contents;">
+
+            <span class="nav-user">
+                <i class="bi bi-person-circle me-1"></i>
+                <span sec:authentication="name"></span>
+            </span>
+
+            <!-- COMMON -->
+            <a href="/components" class="btn-nav active">
+                <i class="bi bi-cpu"></i> Components
+            </a>
+
+            <a href="/user/cart" class="btn-nav">
+                <i class="bi bi-cart3"></i> Cart
+            </a>
+
+            <!-- ✅ ADMIN ONLY -->
+            <a sec:authorize="hasRole('ADMIN')" 
+               href="/admin/add" 
+               class="btn-glow">
+                <i class="bi bi-plus-circle"></i> Add Component
+            </a>
+
+            <!-- LOGOUT -->
+            <form th:action="@{/logout}" method="post" style="display:inline;">
+                <button type="submit" class="btn-nav btn-nav-logout">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+
+        </div>
+
+        <!-- ❌ NOT LOGGED IN -->
+        <div sec:authorize="!isAuthenticated()" style="display:contents;">
+            <a href="/login" class="btn-nav">
+                <i class="bi bi-person"></i> Login
+            </a>
+            <a href="/register" class="btn-glow">
+                <i class="bi bi-rocket-takeoff"></i> Get Started
+            </a>
+        </div>
+
+    </div>
+</nav>
+<!-- ═══════════════════════════════════════════
+     PAGE WRAPPER
+═══════════════════════════════════════════ -->
+<div class="page-wrapper">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="container">
+            <div class="breadcrumb-bar">
+                <a href="/"><i class="bi bi-house"></i> Home</a>
+                <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+                <span>Components</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h1>Browse <span>Components</span></h1>
+                    <p style="color:var(--muted);font-size:0.88rem;margin-top:4px;">
+                        Everything you need to build the perfect setup
+                    </p>
+                </div>
+                <!-- LIVE SEARCH -->
+                <form th:action="@{/components}" method="get" id="searchForm">
+                    <div class="search-wrap">
+                        <i class="bi bi-search search-icon"></i>
+                        <input
+                            type="text"
+                            name="keyword"
+                            id="searchInput"
+                            th:value="${keyword}"
+                            placeholder="Search components..."
+                            class="search-input"
+                            autocomplete="off"
+                            oninput="triggerSearch(this)"
+                        />
+                        <i class="bi bi-x-circle-fill search-clear" id="clearBtn" onclick="clearSearch()"></i>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+        <div class="container">
+            <div class="main-layout">
+
+                <!-- ─── SIDEBAR ─── -->
+                <aside class="sidebar">
+                    <div class="filter-title"><i class="bi bi-sliders me-1"></i> Filters</div>
+
+                    <!-- Category -->
+                    <div class="filter-section">
+                        <div class="filter-section-label"><i class="bi bi-tag"></i> Category</div>
+                        <a href="/components" class="filter-chip active">
+                            <i class="bi bi-grid-3x3-gap"></i> All
+                            <span class="filter-chip-count">248</span>
+                        </a>
+                        <a href="/components?category=developer" class="filter-chip">
+                            <i class="bi bi-code-slash"></i> Developer
+                            <span class="filter-chip-count">86</span>
+                        </a>
+                        <a href="/components?category=gaming" class="filter-chip">
+                            <i class="bi bi-controller"></i> Gaming
+                            <span class="filter-chip-count">97</span>
+                        </a>
+                        <a href="/components?category=creator" class="filter-chip">
+                            <i class="bi bi-camera-video"></i> Creator
+                            <span class="filter-chip-count">65</span>
+                        </a>
+                    </div>
+
+                    <!-- Type -->
+                    <div class="filter-section">
+                        <div class="filter-section-label"><i class="bi bi-cpu"></i> Component Type</div>
+                        <a href="/components?type=cpu" class="filter-chip"><i class="bi bi-cpu-fill"></i> CPU / Processor <span class="filter-chip-count">32</span></a>
+                        <a href="/components?type=gpu" class="filter-chip"><i class="bi bi-display"></i> GPU / Graphics <span class="filter-chip-count">28</span></a>
+                        <a href="/components?type=ram" class="filter-chip"><i class="bi bi-memory"></i> RAM / Storage <span class="filter-chip-count">45</span></a>
+                        <a href="/components?type=monitor" class="filter-chip"><i class="bi bi-monitor"></i> Monitors <span class="filter-chip-count">30</span></a>
+                        <a href="/components?type=keyboard" class="filter-chip"><i class="bi bi-keyboard"></i> Keyboards <span class="filter-chip-count">22</span></a>
+                        <a href="/components?type=mic" class="filter-chip"><i class="bi bi-mic"></i> Microphones <span class="filter-chip-count">18</span></a>
+                        <a href="/components?type=camera" class="filter-chip"><i class="bi bi-camera"></i> Cameras <span class="filter-chip-count">15</span></a>
+                        <a href="/components?type=chair" class="filter-chip"><i class="bi bi-person-workspace"></i> Chairs & Desks <span class="filter-chip-count">20</span></a>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="filter-section">
+                        <div class="filter-section-label"><i class="bi bi-currency-rupee"></i> Price Range</div>
+                        <div class="price-range">
+                            <input type="range" class="range-slider" min="0" max="200000" value="200000" step="1000" id="priceRange" oninput="updatePrice(this.value)">
+                            <div class="range-labels">
+                                <span>₹0</span>
+                                <span id="priceLabel">₹2,00,000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="filter-section">
+                        <div class="filter-section-label"><i class="bi bi-sort-down"></i> Sort By</div>
+                        <select class="sort-select" onchange="this.form && this.form.submit()" id="sortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="popular">Most Popular</option>
+                            <option value="rating">Top Rated</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear -->
+                    <a href="/components" style="display:block;text-align:center;font-size:0.78rem;color:var(--muted);text-decoration:none;padding:0.5rem;border-radius:8px;border:1px solid var(--border);transition:all 0.2s;"
+                       onmouseover="this.style.color='var(--cyan)';this.style.borderColor='rgba(0,242,254,0.3)'"
+                       onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
+                        <i class="bi bi-x-circle me-1"></i> Clear All Filters
+                    </a>
+                </aside>
+
+                <!-- ─── MAIN CONTENT ─── -->
+                <div>
+                    <!-- Active Filters -->
+                    <div class="active-filters" th:if="${keyword != null and keyword != ''}">
+                        <span class="active-filter-tag">
+                            <i class="bi bi-search" style="font-size:0.65rem;"></i>
+                            "<span th:text="${keyword}"></span>"
+                            <a href="/components" class="remove"><i class="bi bi-x"></i></a>
+                        </span>
+                    </div>
+
+                    <!-- Results Bar -->
+                    <div class="results-bar">
+                        <div class="results-count">
+                            Showing <strong th:text="${#lists.size(components)}">0</strong> components
+                            <span th:if="${keyword != null and keyword != ''}">
+                                for "<strong th:text="${keyword}"></strong>"
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="view-toggle">
+                                <button class="view-btn active" id="gridViewBtn" onclick="setView('grid')" title="Grid View">
+                                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                                </button>
+                                <button class="view-btn" id="listViewBtn" onclick="setView('list')" title="List View">
+                                    <i class="bi bi-list-ul"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ─── PRODUCT GRID ─── -->
+                    <div class="products-grid" id="productsGrid">
+
+                        <!-- 🔁 THYMELEAF LOOP -->
+                        <div class="product-card" th:each="c, iter : ${components}"
+                             th:style="'animation-delay:' + ${iter.index * 60} + 'ms'">
+
+                            <!-- IMAGE -->
+                            <div class="card-img-wrap">
+                                <a th:href="@{'/component/' + ${c.id}}">
+                                    <img th:src="@{'/component/image/' + ${c.id}}"
+                                         th:alt="${c.name}"
+                                         loading="lazy"
+                                         onerror="this.src='https://placehold.co/400x400/0d0d1f/00f2fe?text=No+Image'"/>
+                                </a>
+
+                                <!-- Dynamic badge based on index for demo -->
+                                <span class="card-badge badge-new" th:if="${iter.index % 5 == 0}">New</span>
+                                <span class="card-badge badge-hot" th:if="${iter.index % 7 == 0}">Hot</span>
+                                <span class="card-badge badge-top" th:if="${iter.index % 9 == 0}">Top Pick</span>
+
+                                <div class="wishlist-btn" title="Add to Wishlist">
+                                    <i class="bi bi-heart"></i>
+                                </div>
+                            </div>
+
+                            <!-- BODY -->
+                            <div class="card-body-custom">
+                                <div class="card-info">
+                                    <div class="card-category" th:text="${c.category}">Category</div>
+                                    <a class="card-name" th:href="@{'/component/' + ${c.id}}"
+                                       th:text="${c.name}">Component Name</a>
+
+                                    <!-- Stars (static decorative - replace with real data if available) -->
+                                    <div class="card-rating">
+                                        <span class="stars">★★★★☆</span>
+                                        <span class="rating-count">(128)</span>
+                                    </div>
+
+                                    <!-- Price -->
+                                    <div class="card-price-row">
+                                        <span class="card-price">₹<span th:text="${c.price}">0</span></span>
+                                        <!-- Fake original price for visual realism -->
+                                        <span class="card-price-old">₹<span th:text="${c.price + 500}">0</span></span>
+                                        <span class="card-discount">5% off</span>
+                                    </div>
+
+                                    <!-- Stock Status -->
+                                    <div class="card-stock in-stock">
+                                        <span class="stock-dot"></span> In Stock
+                                    </div>
+                                </div>
+
+                                <!-- CART FORM -->
+                                <form th:action="@{/user/add-to-cart}" method="post" class="cart-form"
+                                      onsubmit="showToast(event, this)">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" name="componentId" th:value="${c.id}"/>
+
+                                    <div class="qty-row">
+                                        <span class="qty-label">Qty:</span>
+                                        <button type="button" class="qty-btn" onclick="changeQty(this,-1)">−</button>
+                                        <input type="number" name="quantity" value="1" min="1" max="99"
+                                               class="qty-input" th:id="'qty-' + ${c.id}"/>
+                                        <button type="button" class="qty-btn" onclick="changeQty(this,1)">+</button>
+                                    </div>
+
+                                    <button type="submit" class="btn-add-cart">
+                                        <i class="bi bi-cart-plus-fill"></i> Add to Cart
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- EMPTY STATE (shown when no components) -->
+                        <div class="empty-state" th:if="${#lists.isEmpty(components)}">
+                            <div class="empty-icon">🔍</div>
+                            <h3>No components found</h3>
+                            <p th:if="${keyword != null and keyword != ''}">
+                                No results for "<strong th:text="${keyword}"></strong>".
+                                Try a different search term.
+                            </p>
+                            <p th:if="${keyword == null or keyword == ''}">
+                                No components available right now. Check back soon!
+                            </p>
+                            <a href="/components" class="btn-glow mt-3" style="display:inline-flex;margin-top:1.5rem;">
+                                <i class="bi bi-arrow-left"></i> View All Components
+                            </a>
+                        </div>
+
+                    </div>
+                    <!-- END PRODUCT GRID -->
+
+                    <!-- PAGINATION -->
+                    <div class="pagination-wrap">
+                        <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+                        <a href="#" class="page-btn active">1</a>
+                        <a href="#" class="page-btn">2</a>
+                        <a href="#" class="page-btn">3</a>
+                        <span class="page-btn" style="cursor:default;">…</span>
+                        <a href="#" class="page-btn">12</a>
+                        <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+                    </div>
+
+                </div>
+                <!-- END MAIN CONTENT -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <span class="footer-brand">⚡ BuildMySetup</span>
+        <span class="footer-copy">© 2026 BuildMySetup — All rights reserved</span>
+    </footer>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ── Live Search (debounced) ──
+    let searchTimer;
+    function triggerSearch(input) {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            document.getElementById('searchForm').submit();
+        }, 420);
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchForm').submit();
+    }
+
+    // ── Grid / List Toggle ──
+    function setView(mode) {
+        const grid = document.getElementById('productsGrid');
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        if (mode === 'list') {
+            grid.classList.add('list-view');
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+        } else {
+            grid.classList.remove('list-view');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+        }
+        localStorage.setItem('viewMode', mode);
+    }
+
+    // Restore view preference
+    const savedView = localStorage.getItem('viewMode');
+    if (savedView === 'list') setView('list');
+
+    // ── Quantity Buttons ──
+    function changeQty(btn, delta) {
+        const input = btn.closest('.qty-row').querySelector('.qty-input');
+        let val = parseInt(input.value) + delta;
+        val = Math.max(1, Math.min(99, val));
+        input.value = val;
+    }
+
+    // ── Toast Notification ──
+    function showToast(e, form) {
+        // Let form submit naturally; just show toast
+        const wrap = document.getElementById('toastWrap');
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<i class="bi bi-check-circle-fill toast-icon"></i> Item added to cart!`;
+        wrap.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.4s';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 400);
+        }, 2800);
+    }
+
+    // ── Price Range Label ──
+    function updatePrice(val) {
+        const num = parseInt(val).toLocaleString('en-IN');
+        document.getElementById('priceLabel').textContent = '₹' + num;
+    }
+
+    // ── Wishlist heart toggle ──
+    document.querySelectorAll('.wishlist-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('bi-heart')) {
+                icon.classList.replace('bi-heart', 'bi-heart-fill');
+                btn.style.color = 'var(--pink)';
+                btn.style.borderColor = 'var(--pink)';
+            } else {
+                icon.classList.replace('bi-heart-fill', 'bi-heart');
+                btn.style.color = '';
+                btn.style.borderColor = '';
+            }
+        });
+    });
+
+    // ── Navbar scroll effect ──
+    window.addEventListener('scroll', () => {
+        const nav = document.querySelector('.navbar');
+        nav.style.background = window.scrollY > 30
+            ? 'rgba(6,6,18,0.97)'
+            : 'rgba(6,6,18,0.85)';
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Your Cart — BuildMySetup</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep:    #060612;
+            --bg-card:    #0d0d1f;
+            --bg-panel:   #090915;
+            --bg-glass:   rgba(255,255,255,0.04);
+            --border:     rgba(255,255,255,0.08);
+            --cyan:       #00f2fe;
+            --purple:     #a855f7;
+            --pink:       #ec4899;
+            --orange:     #f97316;
+            --green:      #22c55e;
+            --red:        #ef4444;
+            --yellow:     #f59e0b;
+            --text:       #e2e8f0;
+            --muted:      #64748b;
+            --font-head:  'Orbitron', monospace;
+            --font-body:  'Syne', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── NOISE ── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── AMBIENT GLOW ── */
+        .ambient {
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 0; overflow: hidden;
+        }
+        .ambient::before {
+            content: '';
+            position: absolute;
+            top: -250px; left: -200px;
+            width: 650px; height: 650px;
+            background: radial-gradient(circle, rgba(0,242,254,0.05), transparent 65%);
+        }
+        .ambient::after {
+            content: '';
+            position: absolute;
+            bottom: -150px; right: -150px;
+            width: 550px; height: 550px;
+            background: radial-gradient(circle, rgba(168,85,247,0.06), transparent 65%);
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+            padding: 0.85rem 2rem;
+            background: rgba(6,6,18,0.85);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            transition: background 0.3s;
+        }
+        .navbar-brand {
+            font-family: var(--font-head); font-weight: 900; font-size: 1.1rem;
+            letter-spacing: 2px; text-decoration: none;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-links { display: flex; align-items: center; gap: 0.6rem; }
+        .btn-nav {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.35rem 0.9rem; border-radius: 20px;
+            font-size: 0.82rem; font-family: var(--font-body); font-weight: 600;
+            text-decoration: none; border: 1px solid var(--border);
+            color: var(--text); background: var(--bg-glass); cursor: pointer;
+            transition: all 0.25s;
+        }
+        .btn-nav:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,242,254,0.07); }
+        .btn-nav.active { border-color: var(--cyan); color: var(--cyan); }
+        .btn-nav-logout { color: #f87171; border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
+        .btn-nav-logout:hover { color: #fff; border-color: #f87171; background: rgba(239,68,68,0.2); }
+        .nav-user {
+            font-size: 0.82rem; padding: 0.35rem 0.85rem; border-radius: 20px;
+            background: var(--bg-glass); border: 1px solid var(--border); color: var(--text);
+        }
+        .btn-glow {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.38rem 1.1rem; border-radius: 20px; font-size: 0.82rem;
+            font-family: var(--font-body); font-weight: 700; text-decoration: none;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #000; border: none; cursor: pointer;
+            box-shadow: 0 0 16px rgba(0,242,254,0.25); transition: all 0.25s;
+        }
+        .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(0,242,254,0.4); color: #000; }
+
+        /* ── PAGE LAYOUT ── */
+        .page-wrap {
+            position: relative; z-index: 1;
+            padding-top: 80px; min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        /* ── PAGE HEADER ── */
+        .page-header {
+            padding: 2.5rem 0 1.75rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(0,242,254,0.02), transparent);
+        }
+        .breadcrumb-row {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem;
+        }
+        .breadcrumb-row a { color: var(--cyan); text-decoration: none; }
+        .breadcrumb-row a:hover { text-decoration: underline; }
+        .page-title {
+            font-family: var(--font-head);
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 900; letter-spacing: -0.5px;
+        }
+        .page-title span {
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-sub { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+        /* ── PROGRESS STEPS ── */
+        .checkout-steps {
+            display: flex; align-items: center; gap: 0;
+            font-size: 0.78rem; font-weight: 600;
+        }
+        .step-item {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--muted);
+        }
+        .step-item.active { color: var(--cyan); }
+        .step-item.done   { color: var(--green); }
+        .step-num {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 1px solid currentColor;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; flex-shrink: 0;
+        }
+        .step-divider {
+            width: 40px; height: 1px;
+            background: var(--border); margin: 0 6px;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .content-area { flex: 1; padding: 2.5rem 0 4rem; }
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* ── SECTION HEADING ── */
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .section-head h3 {
+            font-family: var(--font-head);
+            font-size: 0.9rem; font-weight: 700;
+            letter-spacing: 2px; color: var(--text);
+            text-transform: uppercase;
+        }
+        .section-head-count {
+            font-size: 0.78rem; color: var(--muted);
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            padding: 2px 10px; border-radius: 20px;
+        }
+
+        /* ── CART ITEMS PANEL ── */
+        .cart-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .cart-panel-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,242,254,0.02);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .cart-panel-header h3 {
+            font-family: var(--font-head); font-size: 0.85rem;
+            font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .select-all-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; color: var(--muted); cursor: pointer;
+        }
+        .custom-check {
+            width: 16px; height: 16px;
+            border-radius: 4px; border: 1px solid var(--border);
+            background: var(--bg-glass); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; transition: all 0.2s;
+        }
+        .custom-check.checked {
+            background: var(--cyan); border-color: var(--cyan); color: #000;
+        }
+
+        /* ── CART ITEM ROW ── */
+        .cart-item {
+            display: grid;
+            grid-template-columns: 20px 100px 1fr auto auto;
+            gap: 1.25rem;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+            animation: itemIn 0.4s ease both;
+        }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item:hover { background: rgba(0,242,254,0.015); }
+        @keyframes itemIn {
+            from { opacity: 0; transform: translateX(-16px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* image */
+        .item-img-wrap {
+            width: 100px; height: 100px;
+            border-radius: 12px;
+            background: #0a0a1a;
+            border: 1px solid var(--border);
+            overflow: hidden; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .item-img-wrap img {
+            width: 100%; height: 100%;
+            object-fit: contain; padding: 6px;
+            transition: transform 0.35s;
+        }
+        .cart-item:hover .item-img-wrap img { transform: scale(1.08); }
+
+        /* details */
+        .item-details {}
+        .item-category {
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--cyan); margin-bottom: 4px;
+        }
+        .item-name {
+            font-size: 0.95rem; font-weight: 600; color: var(--text);
+            line-height: 1.35; text-decoration: none;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; margin-bottom: 6px;
+        }
+        .item-name:hover { color: var(--cyan); }
+        .item-meta {
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+        }
+        .item-tag {
+            font-size: 0.68rem; font-weight: 600;
+            padding: 2px 7px; border-radius: 20px;
+            background: var(--bg-glass); border: 1px solid var(--border); color: var(--muted);
+        }
+        .item-remove {
+            font-size: 0.72rem; color: var(--muted);
+            background: none; border: none; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+            padding: 2px 7px; border-radius: 20px;
+            border: 1px solid transparent;
+            transition: all 0.2s; font-family: var(--font-body);
+        }
+        .item-remove:hover { color: var(--red); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); }
+
+        /* qty controls */
+        .qty-control {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .qty-row-btns {
+            display: flex; align-items: center; gap: 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px; overflow: hidden;
+        }
+        .qty-btn {
+            width: 34px; height: 34px;
+            background: transparent; border: none; color: var(--text);
+            font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-family: var(--font-body);
+        }
+        .qty-btn:hover { background: rgba(0,242,254,0.08); color: var(--cyan); }
+        .qty-btn:active { transform: scale(0.92); }
+        .qty-num {
+            width: 36px; text-align: center;
+            font-family: var(--font-head); font-size: 0.85rem; font-weight: 700;
+            color: var(--text); border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border); padding: 0 4px;
+            line-height: 34px;
+        }
+        .qty-subtotal {
+            font-size: 0.75rem; color: var(--muted); text-align: center;
+        }
+
+        /* price column */
+        .item-price-col { text-align: right; }
+        .item-price {
+            font-family: var(--font-head); font-size: 1.05rem;
+            font-weight: 700; color: var(--cyan);
+        }
+        .item-price-each { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+        .item-save {
+            display: inline-block; font-size: 0.68rem; font-weight: 700;
+            color: var(--green); margin-top: 4px;
+        }
+
+        /* ── COUPON ── */
+        .coupon-bar {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: rgba(0,242,254,0.015);
+            display: flex; gap: 0.75rem; align-items: center;
+        }
+        .coupon-input {
+            flex: 1; background: var(--bg-glass); border: 1px solid var(--border);
+            border-radius: 10px; padding: 0.5rem 0.9rem;
+            color: var(--text); font-family: var(--font-body); font-size: 0.85rem;
+            outline: none; transition: all 0.25s;
+        }
+        .coupon-input::placeholder { color: var(--muted); }
+        .coupon-input:focus { border-color: var(--cyan); background: rgba(0,242,254,0.04); }
+        .coupon-btn {
+            padding: 0.5rem 1.1rem; border-radius: 10px;
+            font-family: var(--font-body); font-size: 0.82rem; font-weight: 700;
+            background: var(--bg-glass); border: 1px solid var(--border);
+            color: var(--text); cursor: pointer; transition: all 0.25s; white-space: nowrap;
+        }
+        .coupon-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+        /* ── ORDER SUMMARY ── */
+        .summary-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            position: sticky;
+            top: 96px;
+        }
+        .summary-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(168,85,247,0.03);
+        }
+        .summary-header h3 {
+            font-family: var(--font-head); font-size: 0.82rem;
+            font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .summary-body { padding: 1.5rem; }
+
+        .summary-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.88rem; color: var(--muted); margin-bottom: 0.85rem;
+        }
+        .summary-row.total {
+            font-size: 1.05rem; font-weight: 700; color: var(--text);
+            padding-top: 0.85rem; margin-top: 0.25rem;
+            border-top: 1px solid var(--border); margin-bottom: 0;
+        }
+        .summary-row .val { color: var(--text); font-weight: 600; }
+        .summary-row.total .val {
+            font-family: var(--font-head); font-size: 1.2rem; color: var(--cyan);
+        }
+        .summary-row .green { color: var(--green); font-weight: 600; }
+        .summary-divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+        /* savings badge */
+        .savings-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(34,197,94,0.06);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 10px; padding: 0.65rem 1rem;
+            margin-bottom: 1.25rem; font-size: 0.8rem;
+        }
+        .savings-badge-icon { font-size: 1rem; }
+        .savings-badge strong { color: var(--green); }
+
+        /* delivery info */
+        .delivery-info {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,242,254,0.04);
+            border: 1px solid rgba(0,242,254,0.12);
+            border-radius: 10px; padding: 0.65rem 1rem;
+            margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--muted);
+        }
+        .delivery-info i { color: var(--cyan); font-size: 1rem; }
+        .delivery-info strong { color: var(--text); }
+
+        /* checkout btn */
+        .btn-checkout {
+            width: 100%; padding: 0.9rem;
+            border-radius: 12px; font-family: var(--font-body);
+            font-size: 0.95rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #000; border: none; cursor: pointer;
+            box-shadow: 0 6px 24px rgba(0,242,254,0.25);
+            transition: all 0.3s; display: flex; align-items: center;
+            justify-content: center; gap: 8px; position: relative; overflow: hidden;
+        }
+        .btn-checkout::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0; transition: opacity 0.25s;
+        }
+        .btn-checkout:hover::before { opacity: 1; }
+        .btn-checkout:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,242,254,0.35); }
+        .btn-checkout:active { transform: scale(0.98); }
+
+        .btn-clear {
+            width: 100%; padding: 0.65rem;
+            border-radius: 12px; font-family: var(--font-body);
+            font-size: 0.82rem; font-weight: 600;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            color: #f87171; cursor: pointer; transition: all 0.25s;
+            margin-top: 0.6rem; display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+        }
+        .btn-clear:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fff; }
+
+        .btn-continue {
+            width: 100%; padding: 0.65rem;
+            border-radius: 12px; font-family: var(--font-body);
+            font-size: 0.82rem; font-weight: 600;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text); cursor: pointer; transition: all 0.25s;
+            margin-top: 0.6rem; display: flex; align-items: center;
+            justify-content: center; gap: 6px; text-decoration: none;
+        }
+        .btn-continue:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,242,254,0.06); }
+
+        /* trust badges */
+        .trust-badges {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem; margin-top: 1.25rem;
+        }
+        .trust-badge {
+            background: var(--bg-glass); border: 1px solid var(--border);
+            border-radius: 10px; padding: 0.6rem 0.4rem;
+            text-align: center; font-size: 0.68rem; color: var(--muted); line-height: 1.35;
+        }
+        .trust-badge i { display: block; font-size: 1rem; margin-bottom: 3px; color: var(--cyan); }
+
+        /* payment icons */
+        .payment-row {
+            display: flex; justify-content: center; gap: 0.5rem;
+            flex-wrap: wrap; margin-top: 1.25rem; padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .pay-icon {
+            background: var(--bg-glass); border: 1px solid var(--border);
+            border-radius: 6px; padding: 4px 10px;
+            font-size: 0.68rem; color: var(--muted); font-weight: 600;
+        }
+
+        /* ── EMPTY CART ── */
+        .empty-cart {
+            grid-column: 1 / -1;
+            text-align: center; padding: 5rem 2rem;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 20px;
+        }
+        .empty-cart-icon { font-size: 4rem; opacity: 0.35; margin-bottom: 1rem; }
+        .empty-cart h3 { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .empty-cart p { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+        /* ── TOAST ── */
+        .toast-wrap {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+        }
+        .toast-item {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-card); border-radius: 12px;
+            padding: 0.75rem 1.25rem; font-size: 0.85rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: toastIn 0.3s ease;
+            pointer-events: all; min-width: 200px;
+        }
+        .toast-item.success { border: 1px solid rgba(34,197,94,0.4); }
+        .toast-item.error   { border: 1px solid rgba(239,68,68,0.4); }
+        .toast-item.success i { color: var(--green); }
+        .toast-item.error   i { color: var(--red); }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9000;
+            background: rgba(6,6,18,0.8); backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 20px; padding: 2rem; max-width: 380px; width: 90%;
+            text-align: center; animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: none; }
+        }
+        .modal-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .modal-box h4 { font-family: var(--font-head); font-size: 1rem; margin-bottom: 0.5rem; }
+        .modal-box p  { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
+        .modal-cancel {
+            padding: 0.55rem 1.4rem; border-radius: 10px; font-size: 0.85rem;
+            font-family: var(--font-body); font-weight: 600;
+            background: var(--bg-glass); border: 1px solid var(--border);
+            color: var(--text); cursor: pointer; transition: all 0.2s;
+        }
+        .modal-cancel:hover { border-color: var(--border); background: rgba(255,255,255,0.06); }
+        .modal-confirm {
+            padding: 0.55rem 1.4rem; border-radius: 10px; font-size: 0.85rem;
+            font-family: var(--font-body); font-weight: 700;
+            background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+            color: #f87171; cursor: pointer; transition: all 0.2s;
+        }
+        .modal-confirm:hover { background: rgba(239,68,68,0.25); border-color: #f87171; color: #fff; }
+
+        /* ── LOADING OVERLAY ── */
+        .item-loading {
+            opacity: 0.5; pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            position: relative; z-index: 1;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border);
+            background: rgba(6,6,18,0.8);
+            display: flex; align-items: center;
+            justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+        }
+        .footer-brand {
+            font-family: var(--font-head); font-size: 0.9rem;
+            font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .footer-copy { font-size: 0.75rem; color: var(--muted); }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .cart-layout { grid-template-columns: 1fr; }
+            .summary-panel { position: static; }
+        }
+        @media (max-width: 600px) {
+            .cart-item { grid-template-columns: 80px 1fr; grid-template-rows: auto auto; gap: 0.75rem; }
+            .item-price-col { grid-column: 2; }
+            .qty-control { flex-direction: row; align-items: center; grid-column: 1 / -1; }
+            .navbar { padding: 0.85rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<!-- ══════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════ -->
+<nav class="navbar">
+    <a class="navbar-brand" href="/">⚡ BuildMySetup</a>
+    <div class="nav-links">
+        <div sec:authorize="isAuthenticated()" style="display:contents;">
+            <span class="nav-user"><i class="bi bi-person-circle me-1"></i><span sec:authentication="name"></span></span>
+            <a href="/components" class="btn-nav"><i class="bi bi-cpu"></i> Components</a>
+            <a href="/user/cart" class="btn-nav active"><i class="bi bi-cart3"></i> Cart</a>
+            <form th:action="@{/logout}" method="post" style="display:inline;">
+                <button type="submit" class="btn-nav btn-nav-logout"><i class="bi bi-box-arrow-right"></i> Logout</button>
+            </form>
+        </div>
+        <div sec:authorize="!isAuthenticated()" style="display:contents;">
+            <a href="/login" class="btn-nav"><i class="bi bi-person"></i> Login</a>
+            <a href="/register" class="btn-glow"><i class="bi bi-rocket-takeoff"></i> Get Started</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     PAGE WRAP
+══════════════════════════════════════════ -->
+<div class="page-wrap">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="container">
+            <div class="breadcrumb-row">
+                <a href="/"><i class="bi bi-house"></i> Home</a>
+                <i class="bi bi-chevron-right" style="font-size:.6rem;"></i>
+                <a href="/components">Components</a>
+                <i class="bi bi-chevron-right" style="font-size:.6rem;"></i>
+                <span>Cart</span>
+            </div>
+
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                <div>
+                    <h1 class="page-title">Your <span>Cart</span></h1>
+                    <p class="page-sub" th:if="${cartItems != null and !cartItems.isEmpty()}">
+                        <span th:text="${cartItems.size()}">0</span> item(s) ready to checkout
+                    </p>
+                    <p class="page-sub" th:if="${cartItems == null or cartItems.isEmpty()}">
+                        Your cart is empty
+                    </p>
+                </div>
+
+                <!-- CHECKOUT PROGRESS -->
+                <div class="checkout-steps">
+                    <div class="step-item active">
+                        <div class="step-num"><i class="bi bi-cart2" style="font-size:.7rem;"></i></div>
+                        <span>Cart</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <span>Details</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <span>Payment</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content-area">
+        <div class="container">
+
+            <!-- ── CART HAS ITEMS ── -->
+            <div class="cart-layout" th:if="${cartItems != null and !cartItems.isEmpty()}">
+
+                <!-- LEFT: ITEMS -->
+                <div>
+                    <div class="cart-panel">
+                        <div class="cart-panel-header">
+                            <h3><i class="bi bi-bag-check me-2"></i>Order Items</h3>
+                            <div class="select-all-row" onclick="toggleSelectAll(this)">
+                                <div class="custom-check checked" id="selectAllCheck"><i class="bi bi-check"></i></div>
+                                <span>Select All</span>
+                            </div>
+                        </div>
+
+                        <!-- ITEM ROW (Thymeleaf loop) -->
+                        <div class="cart-item" th:each="c, iter : ${cartItems}"
+                             th:id="'item-row-' + ${c.id}"
+                             th:style="'animation-delay:' + ${iter.index * 70} + 'ms'">
+
+                            <!-- CHECKBOX -->
+                            <div class="custom-check checked" onclick="toggleCheck(this)">
+                                <i class="bi bi-check"></i>
+                            </div>
+
+                            <!-- IMAGE -->
+                            <div class="item-img-wrap">
+                                <img th:src="@{'/component/image/' + ${c.component.id}}"
+                                     th:alt="${c.component.name}"
+                                     loading="lazy"
+                                     onerror="this.src='https://placehold.co/200x200/0d0d1f/00f2fe?text=IMG'"/>
+                            </div>
+
+                            <!-- DETAILS -->
+                            <div class="item-details">
+                                <div class="item-category" th:text="${c.component.category}">Category</div>
+                                <a class="item-name" th:href="@{'/component/' + ${c.component.id}}"
+                                   th:text="${c.component.name}">Component Name</a>
+                                <div class="item-meta">
+                                    <span class="item-tag"><i class="bi bi-shield-check me-1"></i>1 Yr Warranty</span>
+                                    <span class="item-tag"><i class="bi bi-truck me-1"></i>Free Delivery</span>
+                                    <button class="item-remove"
+                                            th:onclick="'confirmRemove(' + ${c.id} + ')'">
+                                        <i class="bi bi-trash3"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- QTY CONTROLS -->
+                            <div class="qty-control">
+                                <div class="qty-row-btns">
+                                    <button class="qty-btn"
+                                            th:onclick="'updateQty(' + ${c.id} + ', \'decrease\')'">−</button>
+                                    <span class="qty-num" th:id="'qty-' + ${c.id}" th:text="${c.quantity}">1</span>
+                                    <button class="qty-btn"
+                                            th:onclick="'updateQty(' + ${c.id} + ', \'increase\')'">+</button>
+                                </div>
+                                <div class="qty-subtotal">
+                                    ₹<span th:id="'sub-' + ${c.id}"
+                                           th:text="${c.component.price * c.quantity}">0</span>
+                                </div>
+                            </div>
+
+                            <!-- PRICE -->
+                            <div class="item-price-col">
+                                <div class="item-price">
+                                    ₹<span th:text="${c.component.price}">0</span>
+                                </div>
+                                <div class="item-price-each">per unit</div>
+                                <div class="item-save">Save ₹500</div>
+                            </div>
+
+                        </div>
+                        <!-- END LOOP -->
+
+                        <!-- COUPON BAR -->
+                        <div class="coupon-bar">
+                            <i class="bi bi-tag" style="color:var(--cyan);font-size:1rem;flex-shrink:0;"></i>
+                            <input type="text" class="coupon-input" placeholder="Enter promo code / coupon" id="couponInput"/>
+                            <button class="coupon-btn" onclick="applyCoupon()">Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: SUMMARY -->
+                <div>
+                    <div class="summary-panel">
+                        <div class="summary-header">
+                            <h3><i class="bi bi-receipt me-2"></i>Order Summary</h3>
+                        </div>
+                        <div class="summary-body">
+
+                            <div class="savings-badge">
+                                <span class="savings-badge-icon">🎉</span>
+                                <span>You're saving <strong>₹<span th:text="${cartItems.size() * 500}">0</span></strong> on this order!</span>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Subtotal (<span th:text="${cartItems.size()}">0</span> items)</span>
+                                <span class="val">₹<span th:text="${total}">0</span></span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Discount</span>
+                                <span class="green">−₹<span th:text="${cartItems.size() * 500}">0</span></span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Delivery</span>
+                                <span class="green">FREE</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Platform Fee</span>
+                                <span class="val">₹0</span>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row total">
+                                <span>Total Amount</span>
+                                <span class="val">₹<span th:text="${total}">0</span></span>
+                            </div>
+
+                            <div class="delivery-info mt-3">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                                <span>Estimated delivery: <strong>2–4 business days</strong></span>
+                            </div>
+
+                            <button class="btn-checkout" onclick="proceedCheckout()">
+                                <i class="bi bi-shield-lock-fill"></i>
+                                Proceed to Checkout
+                            </button>
+
+                            <button class="btn-clear" onclick="openClearModal()">
+                                <i class="bi bi-trash3"></i> Clear Cart
+                            </button>
+
+                            <a href="/components" class="btn-continue">
+                                <i class="bi bi-arrow-left"></i> Continue Shopping
+                            </a>
+
+                            <!-- Trust badges -->
+                            <div class="trust-badges">
+                                <div class="trust-badge">
+                                    <i class="bi bi-shield-check"></i>
+                                    Secure<br>Checkout
+                                </div>
+                                <div class="trust-badge">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    Easy<br>Returns
+                                </div>
+                                <div class="trust-badge">
+                                    <i class="bi bi-headset"></i>
+                                    24/7<br>Support
+                                </div>
+                            </div>
+
+                            <!-- Payment methods -->
+                            <div class="payment-row">
+                                <span class="pay-icon">UPI</span>
+                                <span class="pay-icon">Card</span>
+                                <span class="pay-icon">NetBanking</span>
+                                <span class="pay-icon">EMI</span>
+                                <span class="pay-icon">COD</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- END CART HAS ITEMS -->
+
+            <!-- ── EMPTY CART ── -->
+            <div th:if="${cartItems == null or cartItems.isEmpty()}">
+                <div class="empty-cart">
+                    <div class="empty-cart-icon">🛒</div>
+                    <h3>Your cart is empty</h3>
+                    <p>Looks like you haven't added anything yet. Start building your dream setup!</p>
+                    <a href="/components" class="btn-glow" style="display:inline-flex;gap:8px;">
+                        <i class="bi bi-grid-3x3-gap-fill"></i> Explore Components
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <span class="footer-brand">⚡ BuildMySetup</span>
+        <span class="footer-copy">© 2026 BuildMySetup — All rights reserved</span>
+    </footer>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- REMOVE CONFIRM MODAL -->
+<div class="modal-overlay" id="removeModal">
+    <div class="modal-box">
+        <div class="modal-icon">🗑️</div>
+        <h4>Remove Item?</h4>
+        <p>Are you sure you want to remove this item from your cart?</p>
+        <div class="modal-actions">
+            <button class="modal-cancel" onclick="closeModal('removeModal')">Cancel</button>
+            <button class="modal-confirm" id="confirmRemoveBtn">Yes, Remove</button>
+        </div>
+    </div>
+</div>
+
+<!-- CLEAR CART MODAL -->
+<div class="modal-overlay" id="clearModal">
+    <div class="modal-box">
+        <div class="modal-icon">🧹</div>
+        <h4>Clear Cart?</h4>
+        <p>This will remove all items from your cart. This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="modal-cancel" onclick="closeModal('clearModal')">Cancel</button>
+            <button class="modal-confirm" onclick="clearCartConfirmed()">Clear All</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── CSRF ──
+    function getCsrf() {
+        return document.querySelector('meta[name="_csrf"]')?.content || '';
+    }
+
+    // ── TOAST ──
+    function toast(msg, type = 'success') {
+        const wrap = document.getElementById('toastWrap');
+        const el = document.createElement('div');
+        el.className = `toast-item ${type}`;
+        el.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-circle-fill'}"></i>${msg}`;
+        wrap.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; setTimeout(() => el.remove(), 400); }, 3000);
+    }
+
+    // ── MODAL ──
+    function openModal(id)  { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+        el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+    });
+
+    // ── UPDATE QTY ──
+    function updateQty(id, action) {
+        const row = document.getElementById('item-row-' + id);
+        if (row) row.classList.add('item-loading');
+
+        fetch(`/user/${action}/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': getCsrf() }
+        })
+        .then(res => {
+            if (res.ok) {
+                toast(action === 'increase' ? '✓ Quantity increased' : '✓ Quantity decreased');
+                setTimeout(() => location.reload(), 600);
+            } else {
+                if (row) row.classList.remove('item-loading');
+                toast('Something went wrong', 'error');
+            }
+        })
+        .catch(() => {
+            if (row) row.classList.remove('item-loading');
+            toast('Connection error', 'error');
+        });
+    }
+
+    // ── REMOVE ITEM ──
+    let pendingRemoveId = null;
+
+    function confirmRemove(id) {
+        pendingRemoveId = id;
+        openModal('removeModal');
+    }
+
+    document.getElementById('confirmRemoveBtn').addEventListener('click', () => {
+        if (!pendingRemoveId) return;
+        closeModal('removeModal');
+        const row = document.getElementById('item-row-' + pendingRemoveId);
+        if (row) {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(30px)';
+        }
+        fetch(`/user/remove/${pendingRemoveId}`)
+            .then(() => {
+                toast('Item removed from cart');
+                setTimeout(() => location.reload(), 400);
+            })
+            .catch(() => toast('Could not remove item', 'error'));
+    });
+
+    // ── CLEAR CART ──
+    function openClearModal() { openModal('clearModal'); }
+
+    function clearCartConfirmed() {
+        closeModal('clearModal');
+        fetch('/user/clear', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': getCsrf() }
+        })
+        .then(() => {
+            toast('Cart cleared');
+            setTimeout(() => location.reload(), 600);
+        })
+        .catch(() => toast('Could not clear cart', 'error'));
+    }
+
+    // ── CHECKOUT ──
+    function proceedCheckout() {
+        toast('Redirecting to checkout…');
+        // Replace with actual checkout route
+        // window.location.href = '/checkout';
+    }
+
+    // ── COUPON ──
+    function applyCoupon() {
+        const code = document.getElementById('couponInput').value.trim();
+        if (!code) { toast('Enter a coupon code', 'error'); return; }
+        // Demo: replace with real API call
+        if (code.toUpperCase() === 'BUILD10') {
+            toast('🎉 Coupon applied! 10% off');
+        } else {
+            toast('Invalid or expired coupon', 'error');
+        }
+    }
+
+    // ── CHECKBOXES ──
+    function toggleCheck(el) {
+        el.classList.toggle('checked');
+    }
+    function toggleSelectAll(wrap) {
+        const check = document.getElementById('selectAllCheck');
+        const isChecked = check.classList.contains('checked');
+        check.classList.toggle('checked');
+        document.querySelectorAll('.cart-item .custom-check').forEach(c => {
+            isChecked ? c.classList.remove('checked') : c.classList.add('checked');
+        });
+    }
+
+    // ── NAVBAR scroll ──
+    window.addEventListener('scroll', () => {
+        document.querySelector('.navbar').style.background =
+            window.scrollY > 30 ? 'rgba(6,6,18,0.97)' : 'rgba(6,6,18,0.85)';
+    });
+</script>
+
+</body>
+</html>
